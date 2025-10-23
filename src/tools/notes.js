@@ -61,5 +61,11 @@ const getNotesExecution = async () => {
 export default [
   { name: saveNoteName, params: saveNoteParams, description: saveNoteDescription, execution: saveNoteExecution },
   { name: getNotesName, params: getNotesParams, description: getNotesDescription, execution: getNotesExecution },
-  { name: clearNotesName, params: clearNotesParams, description: clearNotesDescription, execution: clearNotesExecution },
+  {
+    name: clearNotesName,
+    params: clearNotesParams,
+    description: clearNotesDescription,
+    execution: clearNotesExecution,
+    dangerous: true
+  },
 ];

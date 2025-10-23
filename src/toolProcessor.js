@@ -37,6 +37,20 @@ export const getToolsList = () => {
   return toolsList;
 };
 
+export const isDangerous = (tool) => {
+  const toolsMap = getToolsList();
+
+  const functionName = tool.function || '';
+
+  const matchingTool = toolsMap[functionName];
+
+  if (matchingTool) {
+    return matchingTool.dangerous;
+  }
+
+  return undefined;
+};
+
 export const processTool = async (tool) => {
   const parameter = tool.parameter || '';
   const functionName = tool.function || '';

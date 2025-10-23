@@ -4,6 +4,7 @@ import config from '../config.js';
 const name = 'shell';
 const params = 'shellCommand';
 const description = 'executes a shell command in the terminal and gives back the result';
+const dangerous = true;
 
 const execution = async (parameter) => {
   const backendResponse = await fetch(`${config.BACKEND_URL}/shell`, {
@@ -23,4 +24,4 @@ const execution = async (parameter) => {
 };
 
 
-export default { name, params, description, execution };
+export default { name, params, description, execution, dangerous };

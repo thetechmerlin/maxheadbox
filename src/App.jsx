@@ -5,7 +5,7 @@ import sample from 'lodash/sample';
 import 'animate.css';
 import config from './config.js';
 import utils from './utils.js';
-import { processTool } from './toolProcessor.js';
+import { processTool, isDangerous } from './toolProcessor.js';
 import SystemPrompt from './systemPrompt.js';
 import StatusMessage from './StatusMessage';
 import WordsContainer from './WordsContainer';
@@ -44,6 +44,8 @@ function App() {
 
   const screenSaverTimeoutRef = useRef(null);
   const randomQuestionTimeout = useRef(null);
+  const hasAskedPermissionRef = useRef(false);
+  const functionRecall = useRef(undefined);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const randomEngagement = useCallback(() => {
@@ -159,10 +161,39 @@ function App() {
     let lastCalledFunction = null;
     let consecutiveCallCount = 0;
 
-    globalAgentChatRef.current = [{
-      role: 'user',
-      content: userInput
-    }];
+    if (!hasAskedPermissionRef.current) {
+      globalAgentChatRef.current = [{
+        role: 'user',
+        content: userInput
+      }];
+    }
+
+    if (hasAskedPermissionRef.current) {
+      hasAskedPermissionRef.current = false;
+      const userGaveConsent = /(yes|ok|yeah|sure|yep)/i.test(userInput);
+
+      const recalledToolCall = JSON.parse(functionRecall.current);
+      functionRecall.current = undefined;
+
+      if (userGaveConsent) {
+        console.log("✅ User granted permission. Executing tool...");
+        setBackendResponse(prev => [...prev, `Permission granted!\n\nExecuting ${recalledToolCall.function}...\n\n`]);
+
+        toolResult = await processTool({ ...recalledToolCall, consent: true });
+        cumulativeResult += `Task result: "${toolResult}"\n`;
+
+        globalAgentChatRef.current.push({
+          role: 'user',
+          content: `Task result for "${recalledToolCall.function}": "${toolResult}". Now continue with the original plan.`
+        });
+      } else {
+        console.log("❌ User denied permission.");
+        globalAgentChatRef.current.push({
+          role: 'user',
+          content: `The user has DENIED permission to execute the function "${recalledToolCall.function}". Acknowledge this and inform the user that you cannot proceed with that specific task.`
+        });
+      }
+    }
 
     while (toolLoopGuard < 5) {
       toolLoopGuard++;
@@ -206,6 +237,18 @@ function App() {
           break;
         }
 
+        const dangerous = isDangerous(toolContent);
+        if (dangerous && !hasAskedPermissionRef.current) {
+          console.log("🚨 Dangerous tool requires permission.");
+          hasAskedPermissionRef.current = true;
+
+          functionRecall.current = JSON.stringify(toolContent);
+
+          cumulativeResult = `Ask the user for permission (they simply have to say YES or NO) to execute the tool: ${toolContent.function}(${toolContent.parameter}). The tool you must execute next, if consent is given, is: ${toolContent.function}`;
+
+          break;
+        }
+
         toolResult = await processTool(toolContent);
 
         if (toolResult !== undefined) {
@@ -229,14 +272,18 @@ function App() {
     setShowFace(true);
     setAppStatus(APP_STATUS.THINKING);
 
-    if (toolResult === undefined) {
-      setFace('reading');
-      processConversation(userInput, 'user');
+    if (hasAskedPermissionRef.current) {
+      processConversation(cumulativeResult, 'user');
     } else {
-      setFace('love');
-      cumulativeResult = cumulativeResult || 'You executed no tasks';
-      const conversationPrompt = `User asked: ${userInput}.\n${cumulativeResult}, communicate the results with the user.`;
-      processConversation(conversationPrompt, 'user');
+      if (toolResult === undefined) {
+        setFace('reading');
+        processConversation(userInput, 'user');
+      } else {
+        setFace('love');
+        cumulativeResult = cumulativeResult || 'You executed no tasks';
+        const conversationPrompt = `User asked: ${userInput}.\n${cumulativeResult}, communicate the results with the user.`;
+        processConversation(conversationPrompt, 'user');
+      }
     }
   }, [processConversation]);
 
@@ -332,6 +379,7 @@ function App() {
 
         await spawnListener();
       } else {
+        setShowFace(true);
         setAppStatus('');
         setFace('dead');
         console.error("Error occurred:", error);

@@ -76,6 +76,7 @@ sudo systemctl edit ollama.service
 ```
 
 Enter the following conf:
+
 ```
 [Service]
 
@@ -121,15 +122,26 @@ npm run start-dev
 
 Creating tools is as simple as making a JavaScript module in `src/tools/` that exports an object with four properties: the tool's **name**, the **parameters** passed to the function, a **describe** field, and the function's main **execution** body.
 Some frontend tools may require backend API handlers to fetch information from the Pi hardware (since the frontend cannot query it directly) and expose it via REST. I created a folder in `backend/notions/` where I placed all these Ruby Sinatra routes.
-
 Take a look at what's already there to have an idea.
-The tools with the `.txt` extension are provided for reference. If you want to import them into the agent, just rename the extension to `.js` or `.rb` for the backend ones.
+
+_The tools with the `.txt` extension are provided for reference. If you want to import them into the agent, just rename the extension to `.js` or `.rb` for the backend ones._
+
+### Dangerous Tools
+
+If you consider certain tools to be dangerous and want additional confirmation before the agent executes them, you can set the property `dangerous: true` when creating a new tool. When the model selects this tool, it will ask for your confirmation before executing it. Simply reply with _YES_ or _NO_. Checkout the demo video with the light bulb to see how this confirmation flow works!
 
 ## Flow Diagram
 
 ![flow chart](readme_assets/max-diagram.png)
 
-## Credits and Acknowledgments
+## Demos
+
+<p>
+  <a href='https://www.youtube.com/embed/ZnuXIrbRQiE'><img src="https://img.youtube.com/vi/ZnuXIrbRQiE/hqdefault.jpg" alt="demo video" height="300"/></a>
+  <a href='https://www.youtube.com/embed/JU2DVROyULY'><img src="https://img.youtube.com/vi/JU2DVROyULY/hqdefault.jpg" alt="confirmation flow" height="300"/></a>
+</p>
+
+## External resources
 
 This project wouldn't be possible without the following open-source projects and resources:
 
